@@ -183,7 +183,7 @@ export async function cosmosigTransactionStart(baseTransactionId: string): Promi
   
   let addedTipId = await addTransactionInProgress(baseTx.id, txId);
   let currentTip = await getFirstTransactionInProgress();
-  if (addedTipId !== currentTip) {
+  if (addedTipId !== currentTip.id) {
     return { res: "failed", msg: "Some other transaction is already in progress" };
   }
   
@@ -204,6 +204,6 @@ export async function cosmosigTransactionStatus(): Promise<any> {
     return { res: "failed", msg: "Base transaction for the current transaction in progress does not exist" };
   }
 
-  let txUrl = `${CMUI_ENDPOINT}/${baseTx.chainRegistryName}/${baseTx.fromAddress}/transaction/${transactionInProgress.transactionId}`;
+  let txUrl = `${CMUI_ENDPOINT}/${baseTx.chainRegistryName}/${baseTx.fromAddress}/transaction/${transactionInProgress.transaction.id}`;
   return { res: "success", baseTx, txUrl };
 }

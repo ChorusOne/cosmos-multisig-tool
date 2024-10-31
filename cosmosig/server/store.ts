@@ -197,6 +197,12 @@ export const getFirstTransactionInProgress = async () => {
         query GetFirstTransactionInProgress {
           queryTransactionInProgress(order: { asc: created },  first: 1) {
             id
+            baseTransaction {
+              id
+            }
+            transaction {
+              id
+            }
           }
         }
       `
