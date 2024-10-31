@@ -7,9 +7,11 @@ export default async function apiCosmosigMain(req: NextApiRequest, res: NextApiR
   if (req.method == "GET") {
     let cosmosigRes = await cosmosigList();
     res.status(200).json(cosmosigRes);
+    return;
   }
 
-  const body: any = req.body;
+  const body = req.body;
+  console.log(body.txs.length);
   for (let tx of body.txs) {
     tx.state = "Pending";
   }
