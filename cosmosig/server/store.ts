@@ -97,7 +97,7 @@ export const updateBaseTransactionState = async (id: string, state: DbBaseTransa
 
   const { updateBaseTransaction } = await gqlClient.request<Response, Variables>(
     gql`
-      mutation UpdateBaseTransactionState($id: [ID!], $state: DbBaseTransactionState!) {
+      mutation UpdateBaseTransactionState($id: [ID!], $state: BaseTransactionState!) {
         updateBaseTransaction(input: { filter: { id: $id }, set: { state: $state } }) {
           baseTransaction {
             state

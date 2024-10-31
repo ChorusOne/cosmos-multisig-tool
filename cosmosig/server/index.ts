@@ -143,11 +143,11 @@ export async function cosmosigCreate(transactions: any): Promise<any> {
   return { res: "success", txIds };
 }
 
-export async function comosigUpdate(
+export async function cosmosigUpdate(
   transactionId: string,
   state: DbBaseTransactionState,
 ): Promise<any> {
-  let updatedState = updateBaseTransactionState(transactionId, state);
+  let updatedState = await updateBaseTransactionState(transactionId, state);
   return { res: "success", updatedState };
 }
 

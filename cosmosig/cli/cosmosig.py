@@ -19,6 +19,12 @@ def createTransactions(transactions):
   response = requests.post(COSMOSIG_API_ENDPOINT, json={"txs": transactions})
   print(response.json())
 
+def updateTransaction(transactionId, state):
+  response = requests.post(f"{COSMOSIG_API_ENDPOINT}/update", json={
+    "transactionId": transactionId,
+    "state": state,
+  })
+  print(response.json())
 
 def readTransactionsFromCSV(file_path):
   transactions = []
@@ -37,9 +43,11 @@ def readTransactionsFromCSV(file_path):
   return transactions
 
 if __name__ == "__main__":
-  file_path = "payout.sample.csv"
-  transactions = readTransactionsFromCSV(file_path)
-  createTransactions(transactions)
+  # file_path = "payout.sample.csv"
+  # transactions = readTransactionsFromCSV(file_path)
+  # createTransactions(transactions)
 
   # listTransactions()
+
+  updateTransaction("0xa", "InProgress")
 
