@@ -1,5 +1,6 @@
 import { gql } from "graphql-request";
 import { gqlClient } from "@/graphql";
+import { requestGraphQlJson } from "@/lib/request";
 import { z } from "zod";
 
 export const DbBaseTransactionState = z.enum(["Pending", "InProgress", "Completed"]);
@@ -144,3 +145,85 @@ export const updateBaseTransactionState = async (id: string, state: DbBaseTransa
 
   return updatedBaseTransaction.state;
 };
+
+export const deleteAllBaseTransactions = async () => {
+  type Response = { readonly deleteBaseTransaction: { readonly msg: string } };
+  type Variables = {};
+
+  const { deleteBaseTransaction } = await gqlClient.request<Response, Variables>(
+    gql`
+      mutation DeleteAllBaseTransactions {
+        deleteBaseTransaction(filter: {}) {
+          msg
+        }
+      }
+    `,
+    {},
+  );
+
+  return deleteBaseTransaction.msg;
+}
+
+// TODO: Followingmight be prone to SQL injection, make it secure
+export const addTransactionInProgress = async (baseTransactionId: string, transactionId: string) => {
+  const res = await requestGraphQlJson({
+    body: {
+      query: `
+        mutation AddTransactionInProgress() {
+          addTransactionInProgress(
+            input: {
+              baseTransaction: { id: "${baseTransactionId}" }
+              transaction: { id: "${transactionId}" }
+              created: ${Date.now()}
+            }
+          ) {
+            transactionInProgress {
+              id
+            }  
+          }
+        }
+      `,
+    }
+  });
+
+  const addedTx = res.data.addTransactionInProgress.transactionInProgress[0];
+  return addedTx.id;
+}
+
+export const getFirstTransactionInProgress = async () => {
+  const res = await requestGraphQlJson({
+    body: {
+      query: `
+        query GetFirstTransactionInProgress {
+          queryTransactionInProgress(order: { asc: created },  first: 1) {
+            id
+          }
+        }
+      `
+    }
+  });
+
+  const transactionsInProgress = res.data.queryTransactionInProgress;
+  if (transactionsInProgress.length === 0) {
+    return null;
+  }
+
+  return transactionsInProgress[0];
+}
+
+export const deleteAllTransactionsInProgress = async () => {
+  const res = await requestGraphQlJson({
+    body: {
+      query: `
+        mutation DeleteAllTransactionsInProgress {
+          deleteTransactionInProgress(filter: {}) {
+            msg
+          }
+        }
+      `
+    }
+  });
+
+  console.log(res);
+  return res.data.deleteTransactionInProgress.msg;
+}

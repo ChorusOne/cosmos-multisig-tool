@@ -1,5 +1,4 @@
-import { cosmosigStart } from "@/cosmosig/server";
-
+import { cosmosigTransactionComplete } from "@/cosmosig/server";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 export default async function apiCosmosigUpdate(req: NextApiRequest, res: NextApiResponse) {
@@ -8,7 +7,6 @@ export default async function apiCosmosigUpdate(req: NextApiRequest, res: NextAp
     return;
   }
 
-  const { transactionId } = req.body;
-  let cosmosigRes = await cosmosigStart(transactionId);
+  let cosmosigRes = await cosmosigTransactionComplete();
   res.status(200).json(cosmosigRes);
 }

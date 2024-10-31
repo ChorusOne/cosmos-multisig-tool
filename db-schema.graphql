@@ -49,3 +49,10 @@ type BaseTransaction {
   denom: String!
   chainRegistryName: String!
 }
+
+type TransactionInProgress {
+  id: ID!
+  created: Int64
+  baseTransaction: BaseTransaction
+  transaction: Transaction
+}

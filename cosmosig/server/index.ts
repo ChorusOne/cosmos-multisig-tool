@@ -1,5 +1,5 @@
 import { getNodeFromArray } from "@/context/ChainsContext/service";
-import { DbTransactionParsedDataJson } from "@/graphql";
+import { DbTransactionParsedDataJson, getTransaction } from "@/graphql";
 import { CreateDbTxBody } from "@/lib/api";
 import { getChainsFromRegistry } from "@/lib/chainRegistry";
 import { displayCoinToBaseCoin } from "@/lib/coinHelpers";
@@ -13,12 +13,16 @@ import {
   getBaseTransactions,
   getBaseTransactionById,
   updateBaseTransactionState,
-  DbBaseTransactionState,
+  deleteAllBaseTransactions,
+  addTransactionInProgress,
+  getFirstTransactionInProgress,
+  deleteAllTransactionsInProgress,
 } from "./store";
 
 import { Account, MsgSendEncodeObject, StargateClient, calculateFee } from "@cosmjs/stargate";
 
 const CMUI_ENDPOINT = process.env.CMUI_ENDPOINT || "http://localhost:3000";
+const LOCAL_CMUI_ENDPOINT = process.env.LOCAL_CMUI_ENDPOINT || "http://localhost:3000";
 
 interface Chain {
   registryName: string;
@@ -61,7 +65,7 @@ async function createDbTx(
   dataJSON: DbTransactionParsedDataJson,
 ): Promise<string> {
   const body: CreateDbTxBody = { dataJSON, creator: creatorAddress, chainId };
-  const { txId }: { txId: string } = await requestJson(`${CMUI_ENDPOINT}/api/transaction`, {
+  const { txId }: { txId: string } = await requestJson(`${LOCAL_CMUI_ENDPOINT}/api/transaction`, {
     body,
   });
 
@@ -131,43 +135,75 @@ async function createSendTx(
   };
 
   const txId = await createDbTx(accountOnChain.address, chain.chainId, txData);
-  return `${CMUI_ENDPOINT}/${chain.registryName}/${fromAddress}/transaction/${txId}`;
+  return txId;
 }
 
-export async function cosmosigList(): Promise<any> {
-  let baseTransactions = await getBaseTransactions();
-  return { res: "success", baseTransactions };
-}
+export async function cosmosigPayoutNew(transactions: any): Promise<any> {
+  await deleteAllBaseTransactions();
 
-export async function cosmosigCreate(transactions: any): Promise<any> {
   let txIds = await createBaseTransaction(transactions);
   return { res: "success", txIds };
 }
 
-export async function cosmosigUpdate(
-  transactionId: string,
-  state: DbBaseTransactionState,
-): Promise<any> {
-  let updatedState = await updateBaseTransactionState(transactionId, state);
-  return { res: "success", updatedState };
+export async function cosmosigPayoutStatus(): Promise<any> {
+  let baseTransactions = await getBaseTransactions();
+  return { res: "success", baseTransactions };
 }
 
-export async function cosmosigStart(transactionId: string): Promise<any> {
-  const tx = await getBaseTransactionById(transactionId);
-  if (!tx) {
-    return { res: "failed", msg: "Transaction for the given ID does not exist" };
+export async function cosmosigTransactionComplete(): Promise<any> {
+  let transactionInProgress = await getFirstTransactionInProgress();
+  if (!transactionInProgress) {
+    return { res: "failed", msg: "No transaction in progress" };
   }
 
-  const txUrl = await createSendTx(
-    tx.fromAddress,
-    tx.toAddress,
-    tx.amount,
-    tx.denom,
-    tx.description || "",
-    tx.chainRegistryName,
+  await deleteAllTransactionsInProgress();
+  await updateBaseTransactionState(transactionInProgress.baseTransaction.id, "Completed");
+
+  return { res: "success" };
+}
+
+export async function cosmosigTransactionStart(baseTransactionId: string): Promise<any> {
+  const baseTx = await getBaseTransactionById(baseTransactionId);
+  if (!baseTx) {
+    return { res: "failed", msg: "Base transaction for the given ID does not exist" };
+  }
+
+  const txId = await createSendTx(
+    baseTx.fromAddress,
+    baseTx.toAddress,
+    baseTx.amount,
+    baseTx.denom,
+    baseTx.description || "",
+    baseTx.chainRegistryName,
   );
 
-  await cosmosigUpdate(transactionId, "InProgress");
-
+  if (!txId) {
+    return { res: "failed", msg: "Failed to create transaction" };
+  }
+  
+  let addedTipId = await addTransactionInProgress(baseTx.id, txId);
+  let currentTip = await getFirstTransactionInProgress();
+  if (addedTipId !== currentTip) {
+    return { res: "failed", msg: "Some other transaction is already in progress" };
+  }
+  
+  await updateBaseTransactionState(baseTx.id, "InProgress");
+  
+  const txUrl = `${CMUI_ENDPOINT}/${baseTx.chainRegistryName}/${baseTx.fromAddress}/transaction/${txId}`;
   return { res: "success", txUrl };
+}
+
+export async function cosmosigTransactionStatus(): Promise<any> {
+  let transactionInProgress = await getFirstTransactionInProgress();
+  if (!transactionInProgress) {
+    return { res: "success", msg: "No transaction in progress" };
+  }
+
+  let baseTx = await getBaseTransactionById(transactionInProgress.baseTransaction.id);
+  if (!baseTx) {
+    return { res: "failed", msg: "Base transaction for the current transaction in progress does not exist" };
+  }
+
+  let txUrl = `${CMUI_ENDPOINT}/${baseTx.chainRegistryName}/${baseTx.fromAddress}/transaction/${transactionInProgress.transactionId}`;
+  return { res: "success", baseTx, txUrl };
 }

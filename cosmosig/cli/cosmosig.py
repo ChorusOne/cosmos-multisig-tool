@@ -32,6 +32,10 @@ def startTransaction(transactionId):
   })
   print(response.json())
 
+def deleteAllTransactions():
+  response = requests.post(f"{COSMOSIG_API_ENDPOINT}/deleteAll")
+  print(response.json())
+
 def readTransactionsFromCSV(file_path):
   transactions = []
   with open(file_path, mode="r") as csvfile:
@@ -55,6 +59,8 @@ if __name__ == "__main__":
 
   # listTransactions()
 
-  startTransaction("0xc")
+  startTransaction("0xf")
+  # deleteAllTransactions()
+  # listTransactions()
   # listTransactions()
 
