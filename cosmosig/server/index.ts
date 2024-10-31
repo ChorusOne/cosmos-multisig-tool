@@ -8,6 +8,8 @@ import { exportMsgToJson, gasOfTx } from "@/lib/txMsgHelpers";
 import { RegistryAsset } from "@/types/chainRegistry";
 import { MsgCodecs, MsgTypeUrls } from "@/types/txMsg";
 
+import { createBaseTransaction, DbBaseTransaction, DbBaseTransactionDraft } from "./store";
+
 import { Account, MsgSendEncodeObject, StargateClient, calculateFee } from "@cosmjs/stargate";
 
 const CMUI_ENDPOINT = process.env.CMUI_ENDPOINT || "http://localhost:3000";
@@ -53,10 +55,12 @@ async function createDbTx(
   dataJSON: DbTransactionParsedDataJson,
 ): Promise<string> {
   const body: CreateDbTxBody = { dataJSON, creator: creatorAddress, chainId };
-  const { txId }: { txId: string } = await requestJson(`${CMUI_ENDPOINT}/api/transaction`, { body });
+  const { txId }: { txId: string } = await requestJson(`${CMUI_ENDPOINT}/api/transaction`, {
+    body,
+  });
 
   return txId;
-};
+}
 
 async function createSendTx(
   fromAddress: string,
@@ -124,23 +128,28 @@ async function createSendTx(
   return `${CMUI_ENDPOINT}/${chain.registryName}/${fromAddress}/transaction/${txId}`;
 }
 
-async function main() {
-  const txPath = await createSendTx(
-    "cosmos18gen42dax4y3efvs5qn39lh55h8wusdym34c8g",
-    "cosmos1g0ydm457z9g26dj2e7tl69sf9c7hncvavgx4ww",
-    "0.001",
-    "atom",
-    "Hello, Cosmos! from Multisig",
-    "cosmoshubtestnet",
-  );
+export async function cosmosigMain(): Promise<any> {
+  // const txPath = await createSendTx(
+  //   "cosmos18gen42dax4y3efvs5qn39lh55h8wusdym34c8g",
+  //   "cosmos1g0ydm457z9g26dj2e7tl69sf9c7hncvavgx4ww",
+  //   "0.001",
+  //   "atom",
+  //   "Hello, Cosmos! from Multisig",
+  //   "cosmoshubtestnet",
+  // );
 
-  console.log(txPath);
+  const baseTransaction: DbBaseTransactionDraft = {
+    serialNumber: 1,
+    description: "Hello, Cosmos! from Multisig",
+    fromAddress: "cosmos18gen42dax4y3efvs5qn39lh55h8wusdym34c8d",
+    toAddress: "cosmos1g0ydm457z9g26dj2e7tl69sf9c7hncvavgx4ww",
+    amount: "0.001",
+    denom: "atom",
+    chainRegistryName: "cosmoshubtestnet",
+  };
+
+  let txId = await createBaseTransaction(baseTransaction);
+  console.log(txId);
+
+  return { res: "success", txId };
 }
-
-main()
-  .then(() => {
-    console.log("Done");
-  })
-  .catch((error) => {
-    console.error(error);
-  });

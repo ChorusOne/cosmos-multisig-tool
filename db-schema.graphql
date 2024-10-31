@@ -31,3 +31,21 @@ type Nonce {
   address: String! @search(by: [hash])
   nonce: Int!
 }
+
+enum BaseTransactionState {
+  Pending
+  InProgress
+  Completed
+}
+
+type BaseTransaction {
+  id: ID!
+  state: BaseTransactionState!
+  serialNumber: Int!
+  description: String
+  fromAddress: String!
+  toAddress: String!
+  amount: String!
+  denom: String!
+  chainRegistryName: String!
+}
