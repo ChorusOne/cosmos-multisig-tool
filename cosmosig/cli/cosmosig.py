@@ -26,6 +26,12 @@ def updateTransaction(transactionId, state):
   })
   print(response.json())
 
+def startTransaction(transactionId):
+  response = requests.post(f"{COSMOSIG_API_ENDPOINT}/start", json={
+    "transactionId": transactionId,
+  })
+  print(response.json())
+
 def readTransactionsFromCSV(file_path):
   transactions = []
   with open(file_path, mode="r") as csvfile:
@@ -49,5 +55,6 @@ if __name__ == "__main__":
 
   # listTransactions()
 
-  updateTransaction("0xa", "InProgress")
+  startTransaction("0xc")
+  # listTransactions()
 

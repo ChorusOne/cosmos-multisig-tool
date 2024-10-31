@@ -11,6 +11,7 @@ import { MsgCodecs, MsgTypeUrls } from "@/types/txMsg";
 import {
   createBaseTransaction,
   getBaseTransactions,
+  getBaseTransactionById,
   updateBaseTransactionState,
   DbBaseTransactionState,
 } from "./store";
@@ -151,30 +152,22 @@ export async function cosmosigUpdate(
   return { res: "success", updatedState };
 }
 
-export async function cosmosigMain(): Promise<any> {
-  // const txPath = await createSendTx(
-  //   "cosmos18gen42dax4y3efvs5qn39lh55h8wusdym34c8g",
-  //   "cosmos1g0ydm457z9g26dj2e7tl69sf9c7hncvavgx4ww",
-  //   "0.001",
-  //   "atom",
-  //   "Hello, Cosmos! from Multisig",
-  //   "cosmoshubtestnet",
-  // );
+export async function cosmosigStart(transactionId: string): Promise<any> {
+  const tx = await getBaseTransactionById(transactionId);
+  if (!tx) {
+    return { res: "failed", msg: "Transaction for the given ID does not exist" };
+  }
 
-  // const baseTransaction: DbBaseTransactionDraft = {
-  //   serialNumber: 1,
-  //   description: "Hello, Cosmos! from Multisig",
-  //   fromAddress: "cosmos18gen42dax4y3efvs5qn39lh55h8wusdym34c8d",
-  //   toAddress: "cosmos1g0ydm457z9g26dj2e7tl69sf9c7hncvavgx4ww",
-  //   amount: "0.001",
-  //   denom: "atom",
-  //   chainRegistryName: "cosmoshubtestnet",
-  // };
+  const txUrl = await createSendTx(
+    tx.fromAddress,
+    tx.toAddress,
+    tx.amount,
+    tx.denom,
+    tx.description || "",
+    tx.chainRegistryName,
+  );
 
-  // let txId = await createBaseTransaction(baseTransaction);
-  // console.log(txId);
+  await cosmosigUpdate(transactionId, "InProgress");
 
-  let baseTransactions = await getBaseTransactions();
-
-  return { res: "success", baseTransactions };
+  return { res: "success", txUrl };
 }

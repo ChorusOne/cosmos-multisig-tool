@@ -84,6 +84,37 @@ export const getBaseTransactions = async () => {
   return queryBaseTransaction;
 };
 
+export const getBaseTransactionById = async (id: string) => {
+  type Response = { readonly getBaseTransaction: DbBaseTransaction | null };
+  type Variables = { readonly id: string };
+
+  const { getBaseTransaction: fetchedTx } = await gqlClient.request<Response, Variables>(
+    gql`
+      query GetBaseTransaction($id: ID!) {
+        getBaseTransaction(id: $id) {
+          id
+          state
+          serialNumber
+          description
+          fromAddress
+          toAddress
+          amount
+          denom
+          chainRegistryName
+        }
+      }
+    `,
+    { id },
+  );
+
+  if (!fetchedTx) {
+    return null;
+  }
+
+  DbBaseTransaction.parse(fetchedTx);
+  return fetchedTx;
+};
+
 const DbBaseTransactionStatePicked = DbBaseTransaction.pick({ state: true });
 type DbBaseTransactionStatePicked = Readonly<z.infer<typeof DbBaseTransactionStatePicked>>;
 
