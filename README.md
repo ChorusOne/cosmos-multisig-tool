@@ -1,69 +1,58 @@
 # Cosmoshub Multisig App
 
-This app allows for multisig users to create, sign and broadcast transactions on any stargate enabled chain. It's built with Cosmjs, Next.js, Dgraph and Vercel.
+## Setup and Run
 
-[The app is live here](https://multisig.confio.run).
+```bash
+# Run dgraph standalone docker image
+$ docker run --rm -it -p "8080:8080" -p "9080:9080" -p "8000:8000" -v ~/dgraph:/dgraph "dgraph/standalone:v21.03.2"
 
-[Here is a user guide on how to use the app](https://github.com/samepant/cosmoshub-legacy-multisig/blob/master/docs/App%20User%20Guide.md)
+# Run migrations
+$ curl -X POST localhost:8080/admin/schema --data-binary '@db-schema.graphql'
 
-## Running your own instance
+# Create .env.local file
+$ cp .env.sample .env.local
 
-### 1. Clone project / setup Vercel deployment
+# Install Node packages
+# Node version: v18.20.3
+$ npm i
 
-This app uses Vercel for deployment and hosting, since they support next.js's serverless functions. You will need a vercel account to deploy this app. Use the button below to one-click clone and deploy this repo. The initial deployment will fail until all the necessary environment variables are input from the following steps.
+# Start the web application
+$ npm run  dev
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fhello-world)
+# Vist http://localhost:3000 to access the multisig manager UI.
+# Here you can create new multisigs and manage existing ones.
+# This UI also allows you manually create multisig transactions.
 
-### 2. Setup environment variables
+# To automate transaction creation, we use the cosmosig CLI tool.
 
-In the Vercel control panel for your new app, go to `Settings -> Environment Variables` and add in the keys and values from this repo's `.env.sample` file. The only remaining variable should be the `DGRAPH_SECRET`, which will be available once you setup your DGraph instance.
+# Generate transactions programmatically by providing a CSV file
+# containing the payout information. The CSV file must have columns
+# as the superset of the columns present in payout.sample.csv.
+$ ./cosmosig/cli/cosmosig.py payout new payout.sample.csv
 
-### 3. Initializing DGraph
+# View the generated transactions
+# Note the ID of the transaction which you'd like to start from
+# the output of this command.
+$ ./cosmosig/cli/cosmosig.py payout status
 
-This app relies on DGraph as for storing account, transaction and signature details.
+# Start a transaction
+$ ./cosmosig/cli/cosmosig.py transaction start <tx-id>
+# The output of this command will contain a link to the UI
+# with the desired trasaction generated and ready to be signed
+# by multiple parties.
 
-- Create a [DGraph](https://cloud.dgraph.io) account
-- Launch a new backend
-- Click the `Develop -> Schema` menu item, and past the contents of the `db-schema.graphql` file in the root of this repo
-- On the `Develop -> Schema` view, click the `Access` tab, and make sure Anonymous Access is OFF.
-- Click the `Admin -> Settings` menu item, and create a key. Copy that key into your vercel app's environment variables as the `DGRAPH_SECRET` value
+# Note: at any given time, we can only have a single transaction in 
+# progress. This means we cannot start manother transaction
+# simultaneously without completing the already started transaction.
+# This is done to avoid `sequenceNumber` conflicts between transactions.
 
-As your instance of the app is used, you can return to the DGraph dashboard to view records for any accounts, transactions or signatures.
+# Once a transaction has been signed by all the required parties
+# and ultimately broadcasted, we need to mark it as complete for
+# the cosmosig tool. Note that we don't need to provide any ID, because
+# there can be only be at most 1 transaction in progress.
+$ ./cosmosig/cli/cosmosig.py transaction complete
 
-### 4. Successful Deployment
-
-Redeploy the app and it will pickup the new environment variables and should be functioning normally.
-
-## Running Locally
-
-### 1. Setup .env.local file
-
-Copy the `.env.sample` file and rename it to `.env.local`
-
-### 2. Run a local cosmos-sdk Simapp instance
-
-It's recommended that you make your simapp instance mimic the denomination of cosmoshub-4 (`uatom`). Put the local address of your node as the value for `NEXT_PUBLIC_NODE_ADDRESS` in your `.env.local` file.
-
-A more in depth tutorial on this is coming soon :)
-
-### 3. Initializing DGraph
-
-This app relies on DGraph as for storing account, transaction and signature details.
-
-- Create a [DGraph](https://cloud.dgraph.io) account
-- Launch a new backend
-- Click the `Develop -> Schema` menu item, and past the contents of the `db-schema.graphql` file in the root of this repo
-- On the `Develop -> Schema` view, click the `Access` tab, and make sure Anonymous Access is OFF.
-- Click the `Admin -> Settings` menu item, and create a key. Copy that key into your vercel app's environment variables as the `DGRAPH_SECRET` value
-
-As your instance of the app is used, you can return to the DGraph dashboard to view records for any accounts, transactions or signatures.
-
-### 3. Run your instance
-
-With the simapp process running, run these commands in another window:
-
+# Repeat the `transaction start` and `transaction complete` steps for all
+# the remaning transactions in the payout.
 ```
-// with node v12.5.0 or later
-npm install
-npm run dev
-```
+
