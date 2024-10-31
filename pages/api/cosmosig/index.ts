@@ -1,8 +1,18 @@
-import { cosmosigMain } from "@/cosmosig/server";
+import { cosmosigList, cosmosigCreate } from "@/cosmosig/server";
+import { DbBaseTransactionDraft } from "@/cosmosig/server/store";
 
 import type { NextApiRequest, NextApiResponse } from "next";
 
 export default async function apiCosmosigMain(req: NextApiRequest, res: NextApiResponse) {
-  let cosmosigRes = await cosmosigMain();
-  res.status(200).json(cosmosigRes);
+  if (req.method == "GET") {
+    let cosmosigRes = await cosmosigList();
+    res.status(200).json(cosmosigRes);
+  }
+
+  const body: any = req.body;
+  for (let tx of body.txs) {
+    tx.state = "Pending";
+  }
+  let comsosigRes = await cosmosigCreate(body);
+  res.status(200).json(comsosigRes);
 }

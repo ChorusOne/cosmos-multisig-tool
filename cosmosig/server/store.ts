@@ -2,9 +2,12 @@ import { gql } from "graphql-request";
 import { gqlClient } from "@/graphql";
 import { z } from "zod";
 
+export const DbBaseTransactionState = z.enum(["Pending", "InProgress", "Completed"]);
+export type DbBaseTransactionState = z.infer<typeof DbBaseTransactionState>;
+
 export const DbBaseTransaction = z.object({
   id: z.string(),
-  state: z.enum(["Pending", "InProgress", "Completed"]),
+  state: DbBaseTransactionState,
   serialNumber: z.number(),
   description: z.string().nullish(),
   fromAddress: z.string(),
@@ -14,51 +17,43 @@ export const DbBaseTransaction = z.object({
   chainRegistryName: z.string(),
 });
 export type DbBaseTransaction = Readonly<z.infer<typeof DbBaseTransaction>>;
-export type DbBaseTransactionDraft = Omit<Omit<DbBaseTransaction, "id">, "state">;
-export const DbBaseTransactionId = DbBaseTransaction.pick({ id: true });
-export type DbBaseTransactionId = Readonly<z.infer<typeof DbBaseTransactionId>>;
 
-export const createBaseTransaction = async (baseTransaction: DbBaseTransactionDraft) => {
+export const DbBaseTransactionId = DbBaseTransaction.pick({ id: true });
+export const DbBaseTransactionIds = z.array(DbBaseTransactionId);
+export type DbBaseTransactionId = Readonly<z.infer<typeof DbBaseTransactionId>>;
+export type DbBaseTransactionIds = Readonly<z.infer<typeof DbBaseTransactionIds>>;
+
+export const DbBaseTransactionDraft = DbBaseTransaction.omit({ id: true });
+export type DbBaseTransactionDraft = Readonly<z.infer<typeof DbBaseTransactionDraft>>;
+
+export const DbBaseTransactionsDraft = z.object({
+  txs: z.array(DbBaseTransactionDraft),
+});
+export type DbBaseTransactionsDraft = Readonly<z.infer<typeof DbBaseTransactionsDraft>>;
+
+export const createBaseTransaction = async (baseTransactions: DbBaseTransactionsDraft) => {
   type Response = {
     readonly addBaseTransaction: { readonly baseTransaction: readonly DbBaseTransactionId[] };
   };
-  type Variables = DbBaseTransactionDraft;
+  type Variables = DbBaseTransactionsDraft;
+
   const { addBaseTransaction } = await gqlClient.request<Response, Variables>(
     gql`
-      mutation CreateBaseTransaction(
-        $serialNumber: Int!
-        $description: String
-        $fromAddress: String!
-        $toAddress: String!
-        $amount: String!
-        $denom: String!
-        $chainRegistryName: String!
-      ) {
-        addBaseTransaction(
-          input: {
-            state: Pending
-            serialNumber: $serialNumber
-            description: $description
-            fromAddress: $fromAddress
-            toAddress: $toAddress
-            amount: $amount
-            denom: $denom
-            chainRegistryName: $chainRegistryName
-          }
-        ) {
+      mutation CreateBaseTransaction($txs: [AddBaseTransactionInput!]!) {
+        addBaseTransaction(input: $txs) {
           baseTransaction {
             id
           }
         }
       }
     `,
-    baseTransaction,
+    baseTransactions,
   );
 
-  const createdBaseTransaction = addBaseTransaction.baseTransaction[0];
-  DbBaseTransactionId.parse(createdBaseTransaction);
+  const createdBaseTransactions = addBaseTransaction.baseTransaction;
+  DbBaseTransactionIds.parse(createdBaseTransactions);
 
-  return createdBaseTransaction.id;
+  return createdBaseTransactions;
 };
 
 const DbBaseTransactions = z.array(DbBaseTransaction);
@@ -83,8 +78,38 @@ export const getBaseTransactions = async () => {
       }
     `,
     {},
-  )
+  );
 
   DbBaseTransactions.parse(queryBaseTransaction);
   return queryBaseTransaction;
-}
+};
+
+const DbBaseTransactionStatePicked = DbBaseTransaction.pick({ state: true });
+type DbBaseTransactionStatePicked = Readonly<z.infer<typeof DbBaseTransactionStatePicked>>;
+
+export const updateBaseTransactionState = async (id: string, state: DbBaseTransactionState) => {
+  type Response = {
+    readonly updateBaseTransaction: {
+      readonly baseTransaction: readonly DbBaseTransactionStatePicked[];
+    };
+  };
+  type Variables = { readonly id: string; readonly state: DbBaseTransactionState };
+
+  const { updateBaseTransaction } = await gqlClient.request<Response, Variables>(
+    gql`
+      mutation UpdateBaseTransactionState($id: [ID!], $state: DbBaseTransactionState!) {
+        updateBaseTransaction(input: { filter: { id: $id }, set: { state: $state } }) {
+          baseTransaction {
+            state
+          }
+        }
+      }
+    `,
+    { id, state },
+  );
+
+  const updatedBaseTransaction = updateBaseTransaction.baseTransaction[0];
+  DbBaseTransactionStatePicked.parse(updatedBaseTransaction);
+
+  return updatedBaseTransaction.state;
+};

@@ -8,7 +8,12 @@ import { exportMsgToJson, gasOfTx } from "@/lib/txMsgHelpers";
 import { RegistryAsset } from "@/types/chainRegistry";
 import { MsgCodecs, MsgTypeUrls } from "@/types/txMsg";
 
-import { createBaseTransaction, getBaseTransactions, DbBaseTransaction, DbBaseTransactionDraft } from "./store";
+import {
+  createBaseTransaction,
+  getBaseTransactions,
+  updateBaseTransactionState,
+  DbBaseTransactionState,
+} from "./store";
 
 import { Account, MsgSendEncodeObject, StargateClient, calculateFee } from "@cosmjs/stargate";
 
@@ -128,6 +133,24 @@ async function createSendTx(
   return `${CMUI_ENDPOINT}/${chain.registryName}/${fromAddress}/transaction/${txId}`;
 }
 
+export async function cosmosigList(): Promise<any> {
+  let baseTransactions = await getBaseTransactions();
+  return { res: "success", baseTransactions };
+}
+
+export async function cosmosigCreate(transactions: any): Promise<any> {
+  let txIds = await createBaseTransaction(transactions);
+  return { res: "success", txIds };
+}
+
+export async function comosigUpdate(
+  transactionId: string,
+  state: DbBaseTransactionState,
+): Promise<any> {
+  let updatedState = updateBaseTransactionState(transactionId, state);
+  return { res: "success", updatedState };
+}
+
 export async function cosmosigMain(): Promise<any> {
   // const txPath = await createSendTx(
   //   "cosmos18gen42dax4y3efvs5qn39lh55h8wusdym34c8g",
@@ -150,7 +173,6 @@ export async function cosmosigMain(): Promise<any> {
 
   // let txId = await createBaseTransaction(baseTransaction);
   // console.log(txId);
-
 
   let baseTransactions = await getBaseTransactions();
 
