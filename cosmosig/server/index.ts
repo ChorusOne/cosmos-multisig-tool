@@ -8,7 +8,7 @@ import { exportMsgToJson, gasOfTx } from "@/lib/txMsgHelpers";
 import { RegistryAsset } from "@/types/chainRegistry";
 import { MsgCodecs, MsgTypeUrls } from "@/types/txMsg";
 
-import { createBaseTransaction, DbBaseTransaction, DbBaseTransactionDraft } from "./store";
+import { createBaseTransaction, getBaseTransactions, DbBaseTransaction, DbBaseTransactionDraft } from "./store";
 
 import { Account, MsgSendEncodeObject, StargateClient, calculateFee } from "@cosmjs/stargate";
 
@@ -138,18 +138,21 @@ export async function cosmosigMain(): Promise<any> {
   //   "cosmoshubtestnet",
   // );
 
-  const baseTransaction: DbBaseTransactionDraft = {
-    serialNumber: 1,
-    description: "Hello, Cosmos! from Multisig",
-    fromAddress: "cosmos18gen42dax4y3efvs5qn39lh55h8wusdym34c8d",
-    toAddress: "cosmos1g0ydm457z9g26dj2e7tl69sf9c7hncvavgx4ww",
-    amount: "0.001",
-    denom: "atom",
-    chainRegistryName: "cosmoshubtestnet",
-  };
+  // const baseTransaction: DbBaseTransactionDraft = {
+  //   serialNumber: 1,
+  //   description: "Hello, Cosmos! from Multisig",
+  //   fromAddress: "cosmos18gen42dax4y3efvs5qn39lh55h8wusdym34c8d",
+  //   toAddress: "cosmos1g0ydm457z9g26dj2e7tl69sf9c7hncvavgx4ww",
+  //   amount: "0.001",
+  //   denom: "atom",
+  //   chainRegistryName: "cosmoshubtestnet",
+  // };
 
-  let txId = await createBaseTransaction(baseTransaction);
-  console.log(txId);
+  // let txId = await createBaseTransaction(baseTransaction);
+  // console.log(txId);
 
-  return { res: "success", txId };
+
+  let baseTransactions = await getBaseTransactions();
+
+  return { res: "success", baseTransactions };
 }

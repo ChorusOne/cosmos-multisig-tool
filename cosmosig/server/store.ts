@@ -2,11 +2,9 @@ import { gql } from "graphql-request";
 import { gqlClient } from "@/graphql";
 import { z } from "zod";
 
-export const DbBaseTransactionState = z.enum(["Pending", "InProgress", "Completed"]);
-
 export const DbBaseTransaction = z.object({
   id: z.string(),
-  state: DbBaseTransactionState,
+  state: z.enum(["Pending", "InProgress", "Completed"]),
   serialNumber: z.number(),
   description: z.string().nullish(),
   fromAddress: z.string(),
@@ -38,6 +36,7 @@ export const createBaseTransaction = async (baseTransaction: DbBaseTransactionDr
       ) {
         addBaseTransaction(
           input: {
+            state: Pending
             serialNumber: $serialNumber
             description: $description
             fromAddress: $fromAddress
@@ -62,27 +61,30 @@ export const createBaseTransaction = async (baseTransaction: DbBaseTransactionDr
   return createdBaseTransaction.id;
 };
 
-// export const getBaseTransactions = async () => {
-//   type Response = { readonly queryBaseTransaction: readonly DbBaseTransaction[] };
-//   type Variables = {};
-//   const { queryBaseTransaction } = await gqlClient.request<Response, Variables>(
-//     gql`
-//       query GetBaseTransactions {
-//         queryBaseTransaction {
-//           id
-//           state
-//           serialNumber
-//           description
-//           fromAddress
-//           toAddress
-//           amount
-//           denom
-//           chainRegistryName
-//         }
-//       }
-//     `,
-//     {},
-//   )
+const DbBaseTransactions = z.array(DbBaseTransaction);
 
-//   return queryBaseTransaction;
-// }
+export const getBaseTransactions = async () => {
+  type Response = { readonly queryBaseTransaction: readonly DbBaseTransaction[] };
+  type Variables = {};
+  const { queryBaseTransaction } = await gqlClient.request<Response, Variables>(
+    gql`
+      query GetBaseTransactions {
+        queryBaseTransaction {
+          id
+          state
+          serialNumber
+          description
+          fromAddress
+          toAddress
+          amount
+          denom
+          chainRegistryName
+        }
+      }
+    `,
+    {},
+  )
+
+  DbBaseTransactions.parse(queryBaseTransaction);
+  return queryBaseTransaction;
+}
