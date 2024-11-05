@@ -139,6 +139,7 @@ async function createSendTx(
 }
 
 export async function cosmosigPayoutNew(transactions: any): Promise<any> {
+  await deleteAllTransactionsInProgress();
   await deleteAllBaseTransactions();
 
   let txIds = await createBaseTransaction(transactions);
