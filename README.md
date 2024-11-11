@@ -1,4 +1,7 @@
-# Cosmoshub Multisig App
+# Cosmoshub Multisig Tool
+
+Forked from [cosmos/cosmos-multisig-ui](https://github.com/cosmos/cosmos-multisig-ui).
+Adds functionality to auto-generate transactions from a CSV file.
 
 ## Setup and Run
 
