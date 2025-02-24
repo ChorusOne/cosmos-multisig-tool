@@ -6,8 +6,8 @@ import type { AppProps } from "next/app";
 import { ChainsProvider } from "../context/ChainsContext";
 import "@/styles/globals.css";
 
-export default function MultisigApp({ Component, pageProps }: AppProps) {
-  return (
+export default function MultisigApp({ Component, pageProps }: AppProps & { Component: any }) {
+  const getLayout = Component.getLayout || ((page: React.ReactNode) => (
     <ChainsProvider>
       <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
         <TooltipProvider>
@@ -36,5 +36,7 @@ export default function MultisigApp({ Component, pageProps }: AppProps) {
         </TooltipProvider>
       </ThemeProvider>
     </ChainsProvider>
-  );
+  ));
+
+  return getLayout(<Component {...pageProps} />);
 }

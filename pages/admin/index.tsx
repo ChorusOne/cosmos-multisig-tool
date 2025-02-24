@@ -140,3 +140,7 @@ export default function AdminDashboard() {
     </div>
   );
 }
+
+AdminDashboard.getLayout = function PageLayout(page: React.ReactNode) {
+    return <>{page}</>; // No layout applied
+};
