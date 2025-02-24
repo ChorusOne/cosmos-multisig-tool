@@ -1,6 +1,11 @@
+import getConfig from "next/config";
+
 import { RegistryAsset } from "@/types/chainRegistry";
 import { emptyChain } from "./helpers";
 import { ChainInfo, ChainItems, ExplorerLinks } from "./types";
+
+const { publicRuntimeConfig } = getConfig();
+const basePath = publicRuntimeConfig.basePath || "";
 
 const registryShaStorageKey = "context-registry-sha";
 export const getShaFromStorage = () => localStorage.getItem(registryShaStorageKey);
@@ -201,7 +206,7 @@ export const getChainFromStorage = (
 export const setChainInUrl = (chain: ChainInfo, chains: ChainItems) => {
   const newPathname = location.pathname.includes(chain.registryName)
     ? location.pathname
-    : `/${chain.registryName}`;
+    : `${basePath}/${chain.registryName}`;
 
   if (chains.mainnets.has(chain.registryName) || chains.testnets.has(chain.registryName)) {
     window.history.replaceState({}, "", newPathname);
