@@ -1,13 +1,18 @@
+import getConfig from "next/config";
 import { useState, useEffect, ChangeEvent } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Upload } from "lucide-react";
 import axios from "axios";
+import Papa from "papaparse";
+
+const { publicRuntimeConfig } = getConfig();
+const basePath = publicRuntimeConfig.basePath || "";
 
 interface Transaction {
-  id: string;
-  state: string;
+  id?: string;
+  state?: string;
   serialNumber: number;
   description: string;
   fromAddress: string;
@@ -19,7 +24,9 @@ interface Transaction {
 
 interface TransactionStatus {
   res: string;
-  msg: string;
+  baseTx?: Transaction;
+  txUrl?: string;
+  msg?: string;
 }
 
 export default function AdminDashboard() {
@@ -30,19 +37,36 @@ export default function AdminDashboard() {
 
   const handleFileUpload = async () => {
     if (!file) return;
-    const formData = new FormData();
-    formData.append("file", file);
-    try {
-      await axios.post("/cosmos-multisig-tool/api/cosmosig/payout/new", formData);
-      alert("Payout initiated successfully");
-    } catch (error) {
-      alert("Error initiating payout");
-    }
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        const transactions: Transaction[] = results.data.map((row: any) => ({
+          serialNumber: parseInt(row["Nr."].trim()),
+          description: row["Memo"].trim(),
+          fromAddress: row["From"].trim(),
+          toAddress: row["To"].trim(),
+          amount: row["Amount"].trim(),
+          denom: row["Denom"].trim(),
+          chainRegistryName: row["Chain Registry Name"].trim(),
+        }));
+
+        try {
+          await axios.post(`${basePath}/api/cosmosig/payout/new`, { txs: transactions });
+          alert("Payout initiated successfully");
+        } catch (error) {
+          alert("Error initiating payout");
+        }
+      },
+      error: () => {
+        alert("Error parsing CSV file");
+      }
+    });
   };
 
   const fetchPayoutStatus = async () => {
     try {
-      const response = await axios.get("/cosmos-multisig-tool/api/cosmosig/payout/status");
+      const response = await axios.get(`${basePath}/api/cosmosig/payout/status`);
       setPayoutStatus(response.data.baseTransactions || []);
     } catch (error) {
       console.error(error);
@@ -51,7 +75,7 @@ export default function AdminDashboard() {
 
   const fetchTransactionStatus = async () => {
     try {
-      const response = await axios.get("/cosmos-multisig-tool/api/cosmosig/transaction/status");
+      const response = await axios.get(`${basePath}/api/cosmosig/transaction/status`);
       setTransactionStatus(response.data);
     } catch (error) {
       console.error(error);
@@ -61,7 +85,7 @@ export default function AdminDashboard() {
   const startTransaction = async () => {
     if (!transactionId) return;
     try {
-      await axios.post("/cosmos-multisig-tool/api/cosmosig/transaction/start", { transactionId });
+      await axios.post(`${basePath}/api/cosmosig/transaction/start`, { transactionId });
       alert("Transaction started");
     } catch (error) {
       alert("Error starting transaction");
@@ -70,7 +94,7 @@ export default function AdminDashboard() {
 
   const completeTransaction = async () => {
     try {
-      await axios.post("/cosmos-multisig-tool/api/cosmosig/transaction/complete");
+      await axios.post(`${basePath}/api/cosmosig/transaction/complete`);
       alert("Transaction completed");
     } catch (error) {
       alert("Error completing transaction");
@@ -83,23 +107,23 @@ export default function AdminDashboard() {
   }, []);
 
   return (
-    <div className="p-8 space-y-6">
-      <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+    <div className="p-8 space-y-6 bg-gray-100 min-h-screen">
+      <h1 className="text-4xl font-bold text-gray-900">Admin Dashboard</h1>
 
-      <Card>
+      <Card className="shadow-lg bg-white">
         <CardContent className="space-y-4">
-          <h2 className="text-xl font-semibold">Upload CSV for New Payout</h2>
-          <Input type="file" onChange={(e: ChangeEvent<HTMLInputElement>) => setFile(e.target.files ? e.target.files[0] : null)} />
-          <Button onClick={handleFileUpload}>Initiate Payout</Button>
+          <h2 className="text-2xl font-semibold text-gray-900">Upload CSV for New Payout</h2>
+          <Input type="file" onChange={(e: ChangeEvent<HTMLInputElement>) => setFile(e.target.files ? e.target.files[0] : null)} className="border-gray-300 bg-white text-gray-900" />
+          <Button onClick={handleFileUpload} className="bg-blue-600 hover:bg-blue-700 text-white">Initiate Payout</Button>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="shadow-lg bg-white">
         <CardContent className="space-y-4">
-          <h2 className="text-xl font-semibold">Payout Status</h2>
+          <h2 className="text-2xl font-semibold text-gray-900">Payout Status</h2>
           <div className="space-y-2">
             {payoutStatus.map((tx) => (
-              <div key={tx.id} className="p-2 rounded bg-gray-100">
+              <div key={tx.id} className="p-4 rounded bg-gray-100 text-gray-900 border border-gray-300">
                 <p><strong>ID:</strong> {tx.id}</p>
                 <p><strong>State:</strong> {tx.state}</p>
                 <p><strong>Serial Number:</strong> {tx.serialNumber}</p>
@@ -114,25 +138,31 @@ export default function AdminDashboard() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="shadow-lg bg-white">
         <CardContent className="space-y-4">
-          <h2 className="text-xl font-semibold">Transaction Management</h2>
+          <h2 className="text-2xl font-semibold text-gray-900">Transaction Management</h2>
           <Input
             placeholder="Enter Transaction ID"
             value={transactionId}
             onChange={(e: ChangeEvent<HTMLInputElement>) => setTransactionId(e.target.value)}
+            className="border-gray-300 bg-white text-gray-900"
           />
-          <Button onClick={startTransaction}>Start Transaction</Button>
-          <Button onClick={completeTransaction}>Complete Transaction</Button>
+          <div className="flex gap-4">
+            <Button onClick={startTransaction} className="bg-green-600 hover:bg-green-700 text-white">Start Transaction</Button>
+            <Button onClick={completeTransaction} className="bg-red-600 hover:bg-red-700 text-white">Complete Transaction</Button>
+          </div>
           <div className="mt-4">
-            <h3 className="font-medium">Transaction Status</h3>
-            {transactionStatus ? (
-              <div className="p-2 bg-gray-100 rounded">
-                <p><strong>Result:</strong> {transactionStatus.res}</p>
-                <p><strong>Message:</strong> {transactionStatus.msg}</p>
+            <h3 className="font-medium text-gray-900">Transaction Status</h3>
+            {transactionStatus?.baseTx ? (
+              <div className="p-4 bg-gray-100 text-gray-900 border border-gray-300 rounded">
+                <p><strong>ID:</strong> {transactionStatus.baseTx.id}</p>
+                <p><strong>Amount:</strong> {transactionStatus.baseTx.amount} {transactionStatus.baseTx.denom}</p>
+                <p><strong>From:</strong> {transactionStatus.baseTx.fromAddress}</p>
+                <p><strong>To:</strong> {transactionStatus.baseTx.toAddress}</p>
+                <p><strong>Transaction URL:</strong> <a href={transactionStatus.txUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">View Transaction</a></p>
               </div>
             ) : (
-              <p>No transaction in progress</p>
+              <p className="text-gray-500">{transactionStatus?.msg || "No transaction in progress"}</p>
             )}
           </div>
         </CardContent>
@@ -142,5 +172,5 @@ export default function AdminDashboard() {
 }
 
 AdminDashboard.getLayout = function PageLayout(page: React.ReactNode) {
-    return <>{page}</>; // No layout applied
+  return <>{page}</>;
 };

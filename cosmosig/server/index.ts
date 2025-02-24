@@ -1,3 +1,5 @@
+import getConfig from "next/config";
+
 import { getNodeFromArray } from "@/context/ChainsContext/service";
 import { DbTransactionParsedDataJson, getTransaction } from "@/graphql";
 import { CreateDbTxBody } from "@/lib/api";
@@ -7,6 +9,9 @@ import { requestJson } from "@/lib/request";
 import { exportMsgToJson, gasOfTx } from "@/lib/txMsgHelpers";
 import { RegistryAsset } from "@/types/chainRegistry";
 import { MsgCodecs, MsgTypeUrls } from "@/types/txMsg";
+
+const { publicRuntimeConfig } = getConfig();
+const basePath = publicRuntimeConfig.basePath || "";
 
 import {
   createBaseTransaction,
@@ -20,9 +25,6 @@ import {
 } from "./store";
 
 import { Account, MsgSendEncodeObject, StargateClient, calculateFee } from "@cosmjs/stargate";
-
-const CMUI_ENDPOINT = process.env.CMUI_ENDPOINT || "http://localhost:3000";
-const LOCAL_CMUI_ENDPOINT = process.env.LOCAL_CMUI_ENDPOINT || "http://localhost:3000";
 
 interface Chain {
   registryName: string;
@@ -65,7 +67,7 @@ async function createDbTx(
   dataJSON: DbTransactionParsedDataJson,
 ): Promise<string> {
   const body: CreateDbTxBody = { dataJSON, creator: creatorAddress, chainId };
-  const { txId }: { txId: string } = await requestJson(`${LOCAL_CMUI_ENDPOINT}/api/transaction`, {
+  const { txId }: { txId: string } = await requestJson(`${basePath}/api/transaction`, {
     body,
   });
 
@@ -190,7 +192,7 @@ export async function cosmosigTransactionStart(baseTransactionId: string): Promi
   
   await updateBaseTransactionState(baseTx.id, "InProgress");
   
-  const txUrl = `${CMUI_ENDPOINT}/${baseTx.chainRegistryName}/${baseTx.fromAddress}/transaction/${txId}`;
+  const txUrl = `${basePath}/${baseTx.chainRegistryName}/${baseTx.fromAddress}/transaction/${txId}`;
   return { res: "success", txUrl };
 }
 
@@ -205,6 +207,6 @@ export async function cosmosigTransactionStatus(): Promise<any> {
     return { res: "failed", msg: "Base transaction for the current transaction in progress does not exist" };
   }
 
-  let txUrl = `${CMUI_ENDPOINT}/${baseTx.chainRegistryName}/${baseTx.fromAddress}/transaction/${transactionInProgress.transaction.id}`;
+  let txUrl = `${basePath}/${baseTx.chainRegistryName}/${baseTx.fromAddress}/transaction/${transactionInProgress.transaction.id}`;
   return { res: "success", baseTx, txUrl };
 }
