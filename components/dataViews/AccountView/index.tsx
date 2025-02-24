@@ -1,3 +1,5 @@
+import getConfig from "next/config";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { explorerLinkAccount } from "@/lib/displayHelpers";
 import { cn } from "@/lib/utils";
@@ -11,6 +13,9 @@ import { useChains } from "../../../context/ChainsContext";
 import { Button } from "../../ui/button";
 import BalancesTable from "../BalancesTable";
 import ButtonConnectWallet from "./ButtonConnectWallet";
+
+const { publicRuntimeConfig } = getConfig();
+const basePath = publicRuntimeConfig.basePath || "";
 
 export default function AccountView() {
   const { chain } = useChains();
@@ -29,7 +34,7 @@ export default function AccountView() {
             {walletInfo?.type ? (
               <Image
                 alt=""
-                src={`/assets/icons/${walletInfo.type.toLowerCase()}.svg`}
+                src={`${basePath}/assets/icons/${walletInfo.type.toLowerCase()}.svg`}
                 width={walletInfo.type === "Ledger" ? 30 : 27}
                 height={walletInfo.type === "Ledger" ? 30 : 27}
                 className={cn("mr-2", walletInfo.type === "Ledger" && "bg-white p-0.5")}

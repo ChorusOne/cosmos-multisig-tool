@@ -1,3 +1,5 @@
+import getConfig from "next/config";
+
 import { useChains } from "@/context/ChainsContext";
 import { DbTransaction } from "@/graphql";
 import { getDbMultisigTxs, getDbNonce } from "@/lib/api";
@@ -19,6 +21,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 import { Label } from "../ui/label";
 import { Switch } from "../ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+
+const { publicRuntimeConfig } = getConfig();
+const basePath = publicRuntimeConfig.basePath || "";
 
 interface ListMultisigTxsProps {
   readonly multisigAddress: string;
@@ -112,7 +117,7 @@ export default function ListMultisigTxs({
             ) : (
               <Image
                 alt=""
-                src={`/assets/icons/keplr.svg`}
+                src={`${basePath}/assets/icons/keplr.svg`}
                 width={20}
                 height={20}
                 className="mr-2"

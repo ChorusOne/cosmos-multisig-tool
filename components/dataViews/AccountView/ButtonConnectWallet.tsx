@@ -1,3 +1,5 @@
+import getConfig from "next/config";
+
 import { getKeplrKey, useKeplrReconnect } from "@/lib/keplr";
 import { cn, toastError } from "@/lib/utils";
 import { LoadingStates, WalletInfo, WalletType } from "@/types/signing";
@@ -11,6 +13,9 @@ import { Dispatch, SetStateAction, useCallback, useState } from "react";
 import { useChains } from "../../../context/ChainsContext";
 import { getConnectError } from "../../../lib/errorHelpers";
 import { Button } from "../../ui/button";
+
+const { publicRuntimeConfig } = getConfig();
+const basePath = publicRuntimeConfig.basePath || "";
 
 interface ButtonConnectWalletProps {
   readonly walletType: WalletType;
@@ -106,7 +111,7 @@ export default function ButtonConnectWallet({
       ) : (
         <Image
           alt=""
-          src={`/assets/icons/${walletType.toLowerCase()}.svg`}
+          src={`${basePath}/assets/icons/${walletType.toLowerCase()}.svg`}
           width={walletType === "Ledger" ? 23 : 20}
           height={walletType === "Ledger" ? 23 : 20}
           className={cn("mr-2", walletType === "Ledger" && "bg-white p-0.5")}

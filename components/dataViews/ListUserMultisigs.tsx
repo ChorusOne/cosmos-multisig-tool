@@ -1,3 +1,5 @@
+import getConfig from "next/config";
+
 import { useChains } from "@/context/ChainsContext";
 import { FetchedMultisigs, getDbNonce, getDbUserMultisigs } from "@/lib/api";
 import { getConnectError } from "@/lib/errorHelpers";
@@ -17,6 +19,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 import { Label } from "../ui/label";
 import { Switch } from "../ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+
+const { publicRuntimeConfig } = getConfig();
+const basePath = publicRuntimeConfig.basePath || "";
 
 export default function ListUserMultisigs() {
   const { chain } = useChains();
@@ -99,7 +104,7 @@ export default function ListUserMultisigs() {
             ) : (
               <Image
                 alt=""
-                src={`/assets/icons/keplr.svg`}
+                src={`${basePath}/assets/icons/keplr.svg`}
                 width={20}
                 height={20}
                 className="mr-2"
