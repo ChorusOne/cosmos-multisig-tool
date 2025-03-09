@@ -7,7 +7,7 @@ export default async function apiCosmosigUpdate(req: NextApiRequest, res: NextAp
     return;
   }
 
-  const { transactionId } = req.body;
-  let cosmosigRes = await cosmosigTransactionStart(transactionId);
+  const { transactionId, gasFees } = req.body;
+  let cosmosigRes = await cosmosigTransactionStart(transactionId, gasFees);
   res.status(200).json(cosmosigRes);
 }

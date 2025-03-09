@@ -34,6 +34,7 @@ export default function AdminDashboard() {
   const [payoutStatus, setPayoutStatus] = useState<Transaction[]>([]);
   const [transactionStatus, setTransactionStatus] = useState<TransactionStatus | null>(null);
   const [transactionId, setTransactionId] = useState<string>("");
+  const [gasFees, setGasFees] = useState<string>("");
 
   const handleFileUpload = async () => {
     if (!file) return;
@@ -85,7 +86,7 @@ export default function AdminDashboard() {
   const startTransaction = async () => {
     if (!transactionId) return;
     try {
-      await axios.post(`${basePath}/api/cosmosig/transaction/start`, { transactionId });
+      await axios.post(`${basePath}/api/cosmosig/transaction/start`, { transactionId, gasFees });
       alert("Transaction started");
     } catch (error) {
       alert("Error starting transaction");
@@ -145,6 +146,12 @@ export default function AdminDashboard() {
             placeholder="Enter Transaction ID"
             value={transactionId}
             onChange={(e: ChangeEvent<HTMLInputElement>) => setTransactionId(e.target.value)}
+            className="border-gray-300 bg-white text-gray-900"
+          />
+          <Input
+            placeholder="Enter Gas Fees (Optional)"
+            value={gasFees}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setGasFees(e.target.value.trim())}
             className="border-gray-300 bg-white text-gray-900"
           />
           <div className="flex gap-4">

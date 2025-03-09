@@ -82,6 +82,7 @@ async function createSendTx(
   denom: string,
   memo: string,
   chainRegistryName: string,
+  gasFees: string,
   gasLimit?: number,
 ): Promise<string | null> {
   console.log("Creating send transaction...");
@@ -128,12 +129,25 @@ async function createSendTx(
 
   const configuredGasLimit = gasLimit || gasOfTx([msg.typeUrl]);
 
+  const fee = (() => {
+    if (!gasFees || gasFees === "0") {
+      return calculateFee(configuredGasLimit, chain.gasPrice);
+    }
+
+    const gasFeesCoin = displayCoinToBaseCoin({ denom, amount: gasFees }, chain.assets);
+    return {
+      amount: [gasFeesCoin],
+      gas: String(configuredGasLimit),
+    };
+  })();
+
+
   const txData: DbTransactionParsedDataJson = {
     accountNumber: accountOnChain.accountNumber,
     sequence: accountOnChain.sequence,
     chainId: chain.chainId,
     msgs,
-    fee: calculateFee(configuredGasLimit, chain.gasPrice),
+    fee,
     memo,
   };
 
@@ -166,7 +180,7 @@ export async function cosmosigTransactionComplete(): Promise<any> {
   return { res: "success" };
 }
 
-export async function cosmosigTransactionStart(baseTransactionId: string): Promise<any> {
+export async function cosmosigTransactionStart(baseTransactionId: string, gasFees: string): Promise<any> {
   const baseTx = await getBaseTransactionById(baseTransactionId);
   if (!baseTx) {
     return { res: "failed", msg: "Base transaction for the given ID does not exist" };
@@ -179,6 +193,7 @@ export async function cosmosigTransactionStart(baseTransactionId: string): Promi
     baseTx.denom,
     baseTx.description || "",
     baseTx.chainRegistryName,
+    gasFees,
   );
 
   if (!txId) {
