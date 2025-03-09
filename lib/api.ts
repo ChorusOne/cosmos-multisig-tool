@@ -1,3 +1,4 @@
+import getConfig from "next/config";
 import { ChainInfo } from "@/context/ChainsContext/types";
 import {
   DbMultisig,
@@ -9,9 +10,12 @@ import {
 import { StdSignature } from "@cosmjs/amino";
 import { requestJson } from "./request";
 
+const { publicRuntimeConfig } = getConfig();
+const basePath = publicRuntimeConfig.basePath || "";
+
 export const getDbMultisig = async (multisigAddress: string, chainId: string) => {
   const multisig: DbMultisig = await requestJson(
-    `/api/chain/${chainId}/multisig/${multisigAddress}`,
+    `${basePath}/api/chain/${chainId}/multisig/${multisigAddress}`,
   );
 
   return multisig;
@@ -29,7 +33,7 @@ export const getDbUserMultisigs = async (signature: StdSignature, chain: ChainIn
   const body: GetDbUserMultisigsBody = { signature, chain };
 
   const multisigs: FetchedMultisigs = await requestJson(
-    `/api/chain/${chain.chainId}/multisig/list`,
+    `${basePath}/api/chain/${chain.chainId}/multisig/list`,
     { body },
   );
 
@@ -41,7 +45,7 @@ export const createDbMultisig = async (multisig: DbMultisigDraft, chainId: strin
   const body: CreateDbMultisigBody = multisig;
 
   const { dbMultisigAddress }: { dbMultisigAddress: string } = await requestJson(
-    `/api/chain/${chainId}/multisig`,
+    `${basePath}/api/chain/${chainId}/multisig`,
     { body },
   );
 
@@ -59,7 +63,7 @@ export const getDbMultisigTxs = async (
   signature: StdSignature,
 ) => {
   const body: GetDbMultisigTxsBody = { signature, chain, multisigAddress };
-  const txs: readonly DbTransaction[] = await requestJson(`/api/transaction/list`, { body });
+  const txs: readonly DbTransaction[] = await requestJson(`${basePath}/api/transaction/list`, { body });
 
   return txs;
 };
@@ -75,7 +79,7 @@ export const createDbTx = async (
   dataJSON: DbTransactionParsedDataJson,
 ) => {
   const body: CreateDbTxBody = { dataJSON, creator: creatorAddress, chainId };
-  const { txId }: { txId: string } = await requestJson("/api/transaction", { body });
+  const { txId }: { txId: string } = await requestJson(`${basePath}/api/transaction`, { body });
 
   return txId;
 };
@@ -86,7 +90,7 @@ export type UpdateDbTxHashBody = {
 export const updateDbTxHash = async (txId: string, txHash: string) => {
   const body: UpdateDbTxHashBody = { txHash };
 
-  const { dbTxHash }: { dbTxHash: string } = await requestJson(`/api/transaction/${txId}`, {
+  const { dbTxHash }: { dbTxHash: string } = await requestJson(`${basePath}/api/transaction/${txId}`, {
     body,
   });
 
@@ -101,7 +105,7 @@ export const createDbSignature = async (
   const body: CreateDbSignatureBody = signatureObj;
 
   const { signature }: { signature: string } = await requestJson(
-    `/api/transaction/${txId}/signature`,
+    `${basePath}/api/transaction/${txId}/signature`,
     { body },
   );
 
@@ -109,6 +113,6 @@ export const createDbSignature = async (
 };
 
 export const getDbNonce = async (address: string, chainId: string) => {
-  const { nonce }: { nonce: number } = await requestJson(`/api/chain/${chainId}/nonce/${address}`);
+  const { nonce }: { nonce: number } = await requestJson(`${basePath}/api/chain/${chainId}/nonce/${address}`);
   return nonce;
 };
