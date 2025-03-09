@@ -1,3 +1,5 @@
+import getConfig from "next/config";
+
 import { getChainsFromRegistry, getShaFromRegistry } from "@/lib/chainRegistry";
 import { toastError } from "@/lib/utils";
 import { StargateClient } from "@cosmjs/stargate";
@@ -14,6 +16,9 @@ import {
   setShaInStorage,
 } from "./storage";
 import { ChainItems } from "./types";
+
+const { publicRuntimeConfig } = getConfig();
+const basePath = publicRuntimeConfig.basePath || "";
 
 export const useChainsFromRegistry = () => {
   const [chainItems, setChainItems] = useState<ChainItems>({
@@ -95,7 +100,12 @@ export const getNodeFromArray = async (nodeArray: readonly string[]) => {
 export const getChain = (chains: ChainItems) => {
   if (typeof window === "undefined") return emptyChain;
 
-  const rootRoute = location.pathname.split("/")[1];
+  let locationPathname = location.pathname;
+  if (locationPathname.startsWith(basePath)) {
+    locationPathname = locationPathname.slice(basePath.length);
+  }
+
+  const rootRoute = locationPathname.split("/")[1];
   // Avoid app from thinking the /api route is a registryName
   const chainNameFromUrl = rootRoute === "api" ? "" : rootRoute;
 
