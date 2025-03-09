@@ -67,9 +67,10 @@ async function createDbTx(
   dataJSON: DbTransactionParsedDataJson,
 ): Promise<string> {
   const body: CreateDbTxBody = { dataJSON, creator: creatorAddress, chainId };
-  const { txId }: { txId: string } = await requestJson(`${basePath}/api/transaction`, {
-    body,
-  });
+  const { txId }: { txId: string } = await requestJson(
+    `${process.env.SERVER_SIDE_BASE_URL}${basePath}/api/transaction`,
+    { body },
+  );
 
   return txId;
 }

@@ -9,6 +9,7 @@ services:
       - dgraph
     environment:
       - DGRAPH_URL=http://dgraph:8080/graphql
+      - SERVER_SIDE_BASE_URL=http://localhost:3000
     command: >
       sh -c "
       until curl -s http://dgraph:8080/health | grep -q '\"status\":\"healthy\"'; do
