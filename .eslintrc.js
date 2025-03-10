@@ -34,5 +34,6 @@ module.exports = {
       "warn",
       { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
     ],
+    "@typescript-eslint/no-explicit-any": "off",
   },
 };
